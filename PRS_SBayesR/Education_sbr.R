@@ -1,9 +1,9 @@
 ##############################################################################
-## Title: UKBB Education sBayesR Workflow
+## Title: UKBB Education (Binary) sBayesR Workflow
 ## Version: 1
 ## Author: Regina Manansala
-## Date Created: 15-September-2020
-## Date Modified: 15-September-2020
+## Date Created: 15-October-2020
+## Date Modified: 15-October-2020
 ##############################################################################
 
 ############################################################
@@ -17,7 +17,7 @@ library(dplyr)
 library(tibble)
 library(stringr)
 
-files <- list.files(path="EDU", pattern= ".fastGWA")
+files <- list.files(path="EDU", pattern= "^edubin_chr(\\d|\\d\\d)\\.fastGWA$")
 
 full <- data.table()
 for(i in files){
@@ -50,7 +50,7 @@ for (i in seq(0.1, 0.8, 0.1))
 {
   print(paste0("Doing ", i))
   full.qc.pval <- full.qc[which(full.qc$P < i), ] 
-  write.table(full.qc.pval, paste0("gctb/EDU/edu_qc_n_pval_",i, ".ma"),
+  write.table(full.qc.pval, paste0("gctb/EDU_bin/edu_qc_n_pval_",i, ".ma"),
               col.names = T, row.names = F, sep = " ", quote = F)
 }
 
@@ -112,4 +112,90 @@ for(i in 1:8){
 	x.2 <- x[,c("Name", "A1", "A1Effect")]
 	write.table(x.2, paste0("EDU_qc_n_pval_0.", i, "/edu_qc_n_pval_0.", i, ".params"), row.names = F, sep = " ", quote = F)
 }
+
+
+############################################
+######### Step 4 - Run plink score #########
+############################################
+
+
+#!/usr/bin/env bash
+
+#SBATCH --array=1-22%10
+#SBATCH --nodes=1 --ntasks=1 --cpus-per-task=16 --mem=60000
+#SBATCH --job-name=score_ht
+
+#printenv
+#exit
+
+mkdir EDU_qc_n/score
+
+source /etc/bashrc
+module purge
+module load pkgsrc/2018Q4
+
+plink \
+    --memory ${SLURM_MEM_PER_NODE} \
+    --threads ${SLURM_CPUS_PER_TASK} \
+    --bfile /raid-05/SPH/pauer/UKBB/UKBB_G_Income/LD_PLINK/LD_BED/ldsub_chr${SLURM_ARRAY_TASK_ID} \
+    --exclude /raid-05/SPH/pauer/UKBB/UKBB_G_Income/LD_PLINK/LD_BED/bim${SLURM_ARRAY_TASK_ID}.dups \
+    --score gctb/EDU/EDU_qc_n/edu_qc_n.params \
+    --out gctb/EDU/EDU_qc_n/score/edu_chr${SLURM_ARRAY_TASK_ID}
+
+#################################
+#################################
+
+#!/usr/bin/env bash
+
+#SBATCH --array=1-22%10
+#SBATCH --nodes=1 --ntasks=1 --cpus-per-task=16 --mem=60000
+#SBATCH --job-name=qc_n_p1
+
+#printenv
+#exit
+
+mkdir EDU_qc_n_pval_0.1/score
+
+source /etc/bashrc
+module purge
+module load pkgsrc/2018Q4
+
+plink \
+    --memory ${SLURM_MEM_PER_NODE} \
+    --threads ${SLURM_CPUS_PER_TASK} \
+    --bfile /raid-05/SPH/pauer/UKBB/UKBB_G_Income/LD_PLINK/LD_BED/ldsub_chr${SLURM_ARRAY_TASK_ID} \
+    --exclude /raid-05/SPH/pauer/UKBB/UKBB_G_Income/LD_PLINK/LD_BED/bim${SLURM_ARRAY_TASK_ID}.dups \
+    --score gctb/EDU/EDU_qc_n_pval_0.1/edu_qc_n_pval_0.1.params \
+    --out gctb/EDU/EDU_qc_n_pval_0.1/score/edu_chr${SLURM_ARRAY_TASK_ID}
+
+###############################################
+######### Step 5 - Calculate Pred R^2 #########
+################# NUMERIC EDU #################
+###############################################
+
+library(data.table)
+library(dplyr)
+
+ukb <- read.table("PRS/PLINK_EDU_bin/edubin_pheno_test.txt")
+
+resLocke <- data.frame(matrix(0, nrow = 9, ncol = 2))
+qc <- c("", "_pval_0.1", "_pval_0.2", "_pval_0.3", "_pval_0.4", "_pval_0.5", "_pval_0.6", "_pval_0.7", "_pval_0.1")
+
+for(k in 1:length(qc)){
+	lky.chr1 <- read.table(paste0("EDU_qc_n", qc[k], "/score/edu_chr1.profile"), header = T)
+	lky.all  <- lky.chr1
+	for (i in seq(2, 22)){
+		print(paste("Doing", i))
+		lky.chri <- read.table(paste0("EDU_qc_n", qc[k], "/score/edu_chr", i, ".profile"), header = T)
+		lky.all$SCORE <- lky.all$SCORE + lky.chri$SCORE
+  	}
+  	lky.ukb <- inner_join(ukb, lky.all, by = c("V1" = "FID"))
+  	resLocke[k, 1] <- paste0("EDU_qc_n", qc[k])
+	resLocke[k, 2] <- summary(lm(lky.ukb$V16 ~ lky.ukb$SCORE))$r.squared
+	print(resLocke)
+}
+colnames(resLocke) <- c("QC", "Pred_R2")
+
+write.table(resLocke, "edubin_results.txt", col.names = T, row.names = F, quote = F, sep = " ")
+
 
