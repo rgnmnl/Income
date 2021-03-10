@@ -1,5 +1,6 @@
 ##############################################################################
 ## Title: UKBB Education sBayesR Workflow
+## Version: 1
 ## Author: Regina Manansala
 ## Date Created: 15-September-2020
 ## Date Modified: 15-September-2020
