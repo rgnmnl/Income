@@ -1,5 +1,7 @@
 ##############################################################################
 ## Title: UKBB MI sBayesR Workflow
+## Version: 1
+## Note: For 20k subset samples. GWAS results obtained using GCTA fastGWA
 ## Author: Regina Manansala
 ## Date Created: 22-January-2021
 ## Date Modified: 02-February-2021
