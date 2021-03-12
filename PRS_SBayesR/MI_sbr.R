@@ -17,11 +17,11 @@ library(tibble)
 library(stringr)
 
 # files <- list.files(pattern=".SAIGE.bgen.txt")
-files <- list.files(path = "/raid-04/SPH/pauer/manansa2/inc_prs/MI/", pattern=".fastGWA")
+files <- list.files(path = "MI/", pattern=".fastGWA")
 
 full <- data.table()
 for(i in files){
-	temp <- fread(paste0("/raid-04/SPH/pauer/manansa2/inc_prs/MI/", i))
+	temp <- fread(paste0("MI/", i))
 	full <- rbind(full, temp)
 }
 
@@ -49,7 +49,7 @@ for (i in seq(0.1, 0.8, 0.1))
 {
   print(paste0("Doing ", i))
   full.qc.pval <- full.qc[which(full.qc$P < i), ] 
-  write.table(full.qc.pval, paste0("~/Data/manansa2/inc_prs_gctb/gctb/MI/GCTA/mi_qc_n_pval_",i, ".ma"),
+  write.table(full.qc.pval, paste0("gctb/MI/GCTA/mi_qc_n_pval_",i, ".ma"),
               col.names = T, row.names = F, sep = " ", quote = F)
 }
 
@@ -68,9 +68,9 @@ mv mi_qc_n.ma MI_qc_n/
 
 ~/Data/manansa2/gctb/gctb_2.02_Linux/gctb \
     --sbayes R \
-    --mldm ~/Data/manansa2/inc_prs_gctb/test_data/ukbEURu_hm3_sparse_mldm_list.txt \
-    --gwas-summary ~/Data/manansa2/inc_prs_gctb/gctb/MI/GCTA/MI_qc_n/mi_qc_n.ma \
-    --out ~/Data/manansa2/inc_prs_gctb/gctb/MI/GCTA/MI_qc_n/mi_qc_n \
+    --mldm test_data/ukbEURu_hm3_sparse_mldm_list.txt \
+    --gwas-summary gctb/MI/GCTA/MI_qc_n/mi_qc_n.ma \
+    --out gctb/MI/GCTA/MI_qc_n/mi_qc_n \
     --chain-length 2000 --burn-in 1000 --out-freq 10
 
 #################################
@@ -91,9 +91,9 @@ mv mi_qc_n_pval_0.${SLURM_ARRAY_TASK_ID}.ma MI_qc_n_pval_0.${SLURM_ARRAY_TASK_ID
 
 ~/Data/manansa2/gctb/gctb_2.02_Linux/gctb \
     --sbayes R \
-    --mldm ~/Data/manansa2/inc_prs_gctb/test_data/ukbEURu_hm3_sparse_mldm_list.txt \
-    --gwas-summary ~/Data/manansa2/inc_prs_gctb/gctb/MI/GCTA/MI_qc_n_pval_0.${SLURM_ARRAY_TASK_ID}/mi_qc_n_pval_0.${SLURM_ARRAY_TASK_ID}.ma \
-    --out ~/Data/manansa2/inc_prs_gctb/gctb/MI/GCTA/MI_qc_n_pval_0.${SLURM_ARRAY_TASK_ID}/mi_qc_n_pval_0.${SLURM_ARRAY_TASK_ID} \
+    --mldm test_data/ukbEURu_hm3_sparse_mldm_list.txt \
+    --gwas-summary gctb/MI/GCTA/MI_qc_n_pval_0.${SLURM_ARRAY_TASK_ID}/mi_qc_n_pval_0.${SLURM_ARRAY_TASK_ID}.ma \
+    --out gctb/MI/GCTA/MI_qc_n_pval_0.${SLURM_ARRAY_TASK_ID}/mi_qc_n_pval_0.${SLURM_ARRAY_TASK_ID} \
     --chain-length 2000 --burn-in 1000 --out-freq 10
 
 
@@ -136,10 +136,10 @@ module load pkgsrc/2018Q4
 plink \
     --memory ${SLURM_MEM_PER_NODE} \
     --threads ${SLURM_CPUS_PER_TASK} \
-    --bfile /raid-05/SPH/pauer/UKBB/UKBB_G_Income/LD_PLINK/LD_BED/ldsub_chr${SLURM_ARRAY_TASK_ID} \
-    --exclude /raid-05/SPH/pauer/UKBB/UKBB_G_Income/LD_PLINK/LD_BED/bim${SLURM_ARRAY_TASK_ID}.dups \
-    --score ~/Data/manansa2/inc_prs_gctb/gctb/MI/GCTA/MI_qc_n/mi_qc_n.params \
-    --out ~/Data/manansa2/inc_prs_gctb/gctb/MI/GCTA/MI_qc_n/score/mi_chr${SLURM_ARRAY_TASK_ID}
+    --bfile ldsub_chr${SLURM_ARRAY_TASK_ID} \
+    --exclude bim${SLURM_ARRAY_TASK_ID}.dups \
+    --score gctb/MI/GCTA/MI_qc_n/mi_qc_n.params \
+    --out gctb/MI/GCTA/MI_qc_n/score/mi_chr${SLURM_ARRAY_TASK_ID}
 
 #################################
 #################################
@@ -162,10 +162,10 @@ module load pkgsrc/2018Q4
 plink \
     --memory ${SLURM_MEM_PER_NODE} \
     --threads ${SLURM_CPUS_PER_TASK} \
-    --bfile /raid-05/SPH/pauer/UKBB/UKBB_G_Income/LD_PLINK/LD_BED/ldsub_chr${SLURM_ARRAY_TASK_ID} \
-    --exclude /raid-05/SPH/pauer/UKBB/UKBB_G_Income/LD_PLINK/LD_BED/bim${SLURM_ARRAY_TASK_ID}.dups \
-    --score ~/Data/manansa2/inc_prs_gctb/gctb/MI/GCTA/MI_qc_n_pval_0.8/mi_qc_n_pval_0.8.params \
-    --out ~/Data/manansa2/inc_prs_gctb/gctb/MI/GCTA/MI_qc_n_pval_0.8/score/mi_chr${SLURM_ARRAY_TASK_ID}
+    --bfile ldsub_chr${SLURM_ARRAY_TASK_ID} \
+    --exclude bim${SLURM_ARRAY_TASK_ID}.dups \
+    --score gctb/MI/GCTA/MI_qc_n_pval_0.8/mi_qc_n_pval_0.8.params \
+    --out gctb/MI/GCTA/MI_qc_n_pval_0.8/score/mi_chr${SLURM_ARRAY_TASK_ID}
 
 
 ###############################################
@@ -176,7 +176,7 @@ plink \
 library(data.table)
 library(dplyr)
 
-ukb <- read.table("/raid-04/SPH/pauer/manansa2/inc_prs/MI/mi_test_20k_subset.txt", header = TRUE)
+ukb <- read.table("MI/mi_test_20k_subset.txt", header = TRUE)
 
 resLocke <- data.frame(matrix(0, nrow = 9, ncol = 2))
 qc <- c("", "_pval_0.1", "_pval_0.2", "_pval_0.3", "_pval_0.4", "_pval_0.5", "_pval_0.6", "_pval_0.7", "_pval_0.8")
