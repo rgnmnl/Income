@@ -3,8 +3,8 @@
 ## Version: 2
 ## Note: For SAIGE gwas results (used all 150k samples)
 ## Author: Regina Manansala
-## Date Created: 02-February-2021
-## Date Modified: 22-February-2021
+## Date Created: 22-January-2021
+## Date Modified: 02-February-2021
 ##############################################################################
 
 ## Run SAIGE Step 1
