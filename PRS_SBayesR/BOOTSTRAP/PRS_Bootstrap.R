@@ -1,5 +1,5 @@
 ##############################################################################
-## Title: BMI PRS Bootstrap
+## Title: Bootstrap
 ## Version: 2
 ## Author: Regina Manansala
 ## Date Created: 06-November-2020
@@ -12,43 +12,86 @@ library(tibble)
 library(stringr)
 library(tidyr)
 
+# Read SNP list
+# all_snps <- fread("SNP_List/all_snps_v2.txt")
+
+# Subset BMI SNPs
+# bmi_snps <- all_snps[all_snps$Phenotype == "BMI", "SNP"]
+
 # Read complete UKBB Income dataset
 ukbb <- fread("ukbb_prs_complete_v2.txt")
 
+# Read build set IDs
+# build <- fread("build_covar_gcta.txt")
+
 # Read test set IDs
-test_ids <- fread("inc_prs_gctb/gctb/test_subset_IDs.txt") 
+test_ids <- fread("/raid-04/SPH/pauer/manansa2/inc_prs_gctb/gctb/test_subset_IDs.txt") 
 
 # Create BMI test subset
 ## use this when subsetting bootstrap samples within the loop
 test <- ukbb[ukbb$ID %in% test_ids$V1, c(1, 18:19, 8549:8642)]
 
 # Get list of BMI PRS files
-bmi_files <- list.files(path="inc_prs_gctb/gctb/BMI/BMI_qc_n/score", pattern=".profile")
+bmi_files <- list.files(path="/raid-04/SPH/pauer/manansa2/inc_prs_gctb/gctb/BMI/BMI_qc_n/score", pattern=".profile")
 # print(bmi_files)
 
 # Get list of INC PRS files
-inc_files <- list.files(path="inc_prs_gctb/gctb/INC/INC_qc_n/score", pattern=".profile")
+inc_files <- list.files(path="/raid-04/SPH/pauer/manansa2/inc_prs_gctb/gctb/INC/INC_qc_n/score", pattern=".profile")
 # print(inc_files)
 
 #################################################################################################
-
-## Initialize results matrix
-bmi_betas_bs <- matrix(nrow=10000, ncol=94)
-bmi_betas_adj <- matrix(nrow=10000, ncol=94)
-
+#################################################################################################
 #################################################################################################
 
-## Initialize results matrix
+# Read in original BMI betas
+# bmi_betas_bs <- fread("BMI_INC_adjusted_build_betas.txt") %>% 
+# 	select(, c("rsID", "bmi_beta")) %>% 
+# 	column_to_rownames(., "rsID") %>%
+# 	t() %>%
+# 	as.matrix()
+
+bmi_betas_bs <- matrix(nrow=10000, ncol=94)
+# colnames(bmi_betas_bs) <- bmi_snps_comp$SNP
+
+# Make data frame to store adjusted BMI betas
+# bmi_betas_adj <- fread("BMI_INC_adjusted_build_betas.txt") %>% 
+# 	select(, c("rsID", "adjusted.bmi.beta")) %>% 
+# 	column_to_rownames(., "rsID") %>%
+# 	t() %>%
+# 	as.matrix()
+
+bmi_betas_adj <- matrix(nrow=10000, ncol=94)
+# colnames(bmi_betas_adj) <- bmi_snps_comp$SNP
+	
+#################################################################################################
+#################################################################################################
+#################################################################################################
+
+# Read in original INC betas
+# inc_betas_bs <- fread("BMI_INC_adjusted_build_betas.txt") %>% 
+# 	select(, c("rsID", "inc_beta")) %>% 
+# 	column_to_rownames(., "rsID") %>%
+# 	t() %>%
+# 	as.matrix()
+
 inc_betas_bs <- matrix(nrow=10000, ncol=94)
+# colnames(inc_betas_bs) <- bmi_snps_comp$SNP
+
+# Make data frame to store adjusted INC betas
+# inc_betas_adj <- fread("BMI_INC_adjusted_build_betas.txt") %>% 
+# 	select(, c("rsID", "adjusted.inc.beta")) %>% 
+# 	column_to_rownames(., "rsID") %>%
+# 	t() %>%
+# 	as.matrix()
+	
 inc_betas_adj <- matrix(nrow=10000, ncol=94)
+# colnames(inc_betas_adj) <- bmi_snps_comp$SNP
 
 ################# 
 
 start <- Sys.time()
 print(paste0("Start: ", start))
-for(b in 1:100){
-
-	## Sample
+for(b in 1:5){
 	sample.ids <- sample(test_ids$V1, size=length(test_ids$V1), replace=TRUE) %>% as.data.frame() %>% rename(., "V1" = `.`)
 
 	################# BMI - Calculate covariance between SNP genotype and chromosomal score && SNP genotype and overall score
@@ -61,7 +104,7 @@ for(b in 1:100){
 
 	## Read BMI PRS files and subset to only include test samples
 	for(i in bmi_files){
-		temp <- fread(paste0("inc_prs_gctb/gctb/BMI/BMI_qc_n/score/",i)) %>% right_join(., sample.ids, by = c("FID" = "V1"))
+		temp <- fread(paste0("/raid-04/SPH/pauer/manansa2/inc_prs_gctb/gctb/BMI/BMI_qc_n/score/",i)) %>% right_join(., sample.ids, by = c("FID" = "V1"))
 		assign(gsub("\\..*","", i), temp)
 	}
 
@@ -115,7 +158,7 @@ for(b in 1:100){
 
 	## Read INC PRS files and subset to only include test samples
 	for(i in inc_files){
-		temp <- fread(paste0("inc_prs_gctb/gctb/INC/INC_qc_n/score/",i)) %>% right_join(., sample.ids, by = c("FID" = "V1"))
+		temp <- fread(paste0("/raid-04/SPH/pauer/manansa2/inc_prs_gctb/gctb/INC/INC_qc_n/score/",i)) %>% right_join(., sample.ids, by = c("FID" = "V1"))
 		assign(gsub("\\..*","", i), temp)
 	}
 
@@ -163,11 +206,6 @@ end <- Sys.time()
 print(paste0("End: ", end))
 
 print(end-start)
-
-colnames(bmi_betas_bs) <- bmi_snps_comp$SNP
-colnames(bmi_betas_adj) <- bmi_snps_comp$SNP
-colnames(inc_betas_bs) <- bmi_snps_comp$SNP
-colnames(inc_betas_adj) <- bmi_snps_comp$SNP
 
 write.table(bmi_betas_bs, "BOOTSTRAP/BMI_betas_bs.txt", sep = "\t", row.names = TRUE, col.names = TRUE, quote=FALSE)
 write.table(bmi_betas_adj, "BOOTSTRAP/BMI_betas_adj.txt", sep = "\t", row.names = TRUE, col.names = TRUE, quote=FALSE)
